@@ -1,0 +1,1 @@
+export { derivePassword } from './utils';

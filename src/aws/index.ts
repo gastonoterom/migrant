@@ -1,0 +1,1 @@
+export { updateAllSecrets } from './secrets';

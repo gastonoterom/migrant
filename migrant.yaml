@@ -1,0 +1,20 @@
+host: 'localhost'
+port: 5432
+
+admin_user: 'postgres'
+admin_password: 'postgres'
+
+services:
+  - name: los-core-api
+    postgres_user: 'dev_los_core_api_production'
+    environment: production
+    databases:
+      - 'los_core_api_production'
+      # - 'data_builder'
+    secrets:
+      - container: 'testing/migrant/not-prod'
+        key: 'DATABASE_URL'
+        database_name: 'los_core_api_production'
+      # - container: 'dev/sandbox/los-core-api/config'
+      #   key: 'DATA_BUILDER_DATABASE_URL'
+      #   database_name: 'data_builder'
