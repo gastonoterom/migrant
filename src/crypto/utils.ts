@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { pbkdf2Sync } from 'crypto';
 
 type DerivePasswordParams = {
   seed: string;
@@ -6,8 +6,8 @@ type DerivePasswordParams = {
   identifier: string;
 };
 
-// TODO: study theoretical safety
 export const derivePassword = ({ seed, timestamp, identifier }: DerivePasswordParams): string => {
-  const data = `${timestamp}:${identifier}`;
-  return createHmac('sha256', seed).update(data).digest('hex');
+  const salt = `${timestamp}:${identifier}`;
+  const key = pbkdf2Sync(seed, salt, 100000, 32, 'sha256');
+  return key.toString('hex');
 };

@@ -1,3 +1,5 @@
+![migrant logo](assets/logo.png)
+
 # migrant
 
 A deterministic credential migration tool for managing database users and secrets across environments. Built with pure functional programming principles.
@@ -34,18 +36,19 @@ END IF;
 
 ### Password Generation
 
-Passwords are derived deterministically using HMAC-SHA256.
+Passwords are derived deterministically using PBKDF2.
 
 ```typescript
 const derivePassword = ({ seed, timestamp, identifier }): string => {
-  const data = `${timestamp}:${identifier}`;
-  return createHmac('sha256', seed).update(data).digest('hex');
+  const salt = `${timestamp}:${identifier}`;
+  const key = pbkdf2Sync(seed, salt, 100000, 32, 'sha256');
+  return key.toString('hex');
 };
 ```
 
 ### AWS Secrets
 
-Secrets are updated non-destructively. The tool reads the current secret JSON, merges in new values, and writes back — preserving any existing keys.
+Secrets are updated non-destructively. The tool reads the current secret JSON, merges in new values, and writes back preserving any existing keys.
 
 ## Pure Functional Programming
 
@@ -72,19 +75,19 @@ const main: TE.TaskEither<Error, void> = pipe(
 
 ### Current
 
-- **Postgres User Management** — Creates users with secure auto-generated passwords and grants database permissions
-- **AWS Secrets Manager** — Updates secrets with new credentials
+- **Postgres User Management**: Creates users with secure auto-generated passwords and grants database permissions
+- **AWS Secrets Manager**: Updates secrets with new credentials
 
 ### Planned
 
-- **ArgoCD Integration** — Restart services after credential updates
-- **Postgres User Cleanup** — Schedule deletion of obsolete users
+- **ArgoCD Integration**: Restart services after credential updates
+- **Postgres User Cleanup**: Schedule deletion of obsolete users
 
 ## Environment Variables
 
 | Variable             | Required | Description                                                     |
 | -------------------- | -------- | --------------------------------------------------------------- |
-| `PASSWORD_SEED`      | Yes      | Secret seed for deterministic password derivation (HMAC-SHA256) |
+| `PASSWORD_SEED`      | Yes      | Secret seed for deterministic password derivation (PBKDF2)      |
 | `PASSWORD_TIMESTAMP` | Yes      | Timestamp appended to usernames and used in password generation |
 | `CONFIG_FILE`        | No       | Path to config file (defaults to `./migrant.yaml`)              |
 
