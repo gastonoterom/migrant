@@ -1,6 +1,6 @@
 ![migrant logo](assets/logo.png)
 
-# migrant
+# Migrant
 
 A deterministic credential migration tool for managing database users and secrets across environments. Built with pure functional programming principles.
 
