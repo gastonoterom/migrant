@@ -1,1 +1,1 @@
-export { updateAllSecrets } from './secrets';
+export { updateSecrets } from './secrets';

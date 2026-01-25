@@ -3,11 +3,11 @@ import 'dotenv/config';
 import * as E from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/lib/TaskEither';
-import { updateAllSecrets } from './aws';
+import { updateSecrets } from './aws';
 import { getEnvironment, readConfig } from './config';
 import { consoleLog, returnVoid } from './fp-core';
 import { log } from './log';
-import { createPostgresUsers } from './postgres';
+import { createUsers } from './postgres';
 
 const main: TE.TaskEither<Error, void> = pipe(
   getEnvironment(),
@@ -16,8 +16,8 @@ const main: TE.TaskEither<Error, void> = pipe(
   TE.tap(({ configFile }) => consoleLog(`📄 Reading configuration from: ${configFile}`)),
   TE.flatMap(({ configFile }) => readConfig(configFile)),
   TE.tap((config) => consoleLog(`⚙️  Processing ${config.services.length} service/s...`)),
-  TE.tap(createPostgresUsers),
-  TE.tap(updateAllSecrets),
+  TE.tap(createUsers),
+  TE.tap(updateSecrets),
   // TE.tap(restartServices), - WIP
   returnVoid
 );

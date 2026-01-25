@@ -5,9 +5,9 @@ import postgres from 'postgres';
 import type { Config, Service } from '../config';
 import { consoleLog, returnVoid, traverseTaskEither, withContext } from '../fp-core';
 import type { PostgresUser } from './types';
-import { validatePassword, validateUsername } from './utils';
+import { validateCredentials } from './utils';
 
-const createPostgresClient = (config: Config) => {
+const createClient = (config: Config) => {
   const { host, port, admin_user: username, admin_password: password } = config;
 
   return postgres({
@@ -22,41 +22,35 @@ const createPostgresClient = (config: Config) => {
   });
 };
 
-const createUser = (
+const createPostgresUser = (
   sql: postgres.Sql,
   { username, password }: PostgresUser,
   databases: string[]
 ): TE.TaskEither<Error, void> =>
-  pipe(
-    TE.fromEither(validateUsername(username)),
-    TE.flatMap(() => TE.fromEither(validatePassword(password))),
-    TE.flatMap(() =>
-      TE.tryCatch(
-        async () =>
-          sql.begin('isolation level serializable', async (_tx) => {
-            const tx = _tx as unknown as postgres.Sql;
+  TE.tryCatch(
+    async () =>
+      sql.begin('isolation level serializable', async (_tx) => {
+        const tx = _tx as unknown as postgres.Sql;
 
-            const exists = await tx`SELECT 1 FROM pg_roles WHERE rolname = ${username}`;
+        const exists = await tx`SELECT 1 FROM pg_roles WHERE rolname = ${username}`;
 
-            if (exists.length === 0) {
-              await tx.unsafe(`CREATE USER "${username}" WITH PASSWORD '${password}'`);
-            } else {
-              await tx.unsafe(`ALTER USER "${username}" WITH PASSWORD '${password}'`);
-            }
-            for (const database of databases) {
-              await tx`GRANT CONNECT ON DATABASE ${sql(database)} TO ${sql(username)}`;
-              await tx`GRANT USAGE, CREATE ON SCHEMA public TO ${sql(username)}`;
-              await tx`GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${sql(username)}`;
-              await tx`GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${sql(username)}`;
-              await tx`GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO ${sql(username)}`;
-            }
-          }),
-        withContext(`Failed to create postgres user: ${username}`)
-      )
-    )
+        if (exists.length === 0) {
+          await tx.unsafe(`CREATE USER "${username}" WITH PASSWORD '${password}'`);
+        } else {
+          await tx.unsafe(`ALTER USER "${username}" WITH PASSWORD '${password}'`);
+        }
+        for (const database of databases) {
+          await tx`GRANT CONNECT ON DATABASE ${sql(database)} TO ${sql(username)}`;
+          await tx`GRANT USAGE, CREATE ON SCHEMA public TO ${sql(username)}`;
+          await tx`GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${sql(username)}`;
+          await tx`GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${sql(username)}`;
+          await tx`GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO ${sql(username)}`;
+        }
+      }),
+    withContext(`Failed to create postgres user: ${username}`)
   );
 
-const createPostgresUser =
+const createUser =
   (sql: postgres.Sql) =>
   (service: Service): TE.TaskEither<Error, void> => {
     const { postgres_user: username, postgres_password: password, databases } = service;
@@ -64,14 +58,15 @@ const createPostgresUser =
 
     return pipe(
       consoleLog(`👤 Creating user: ${user.username}`),
-      TE.flatMap(() => createUser(sql, user, databases)),
+      TE.flatMapEither(() => validateCredentials(username, password)),
+      TE.flatMap(() => createPostgresUser(sql, user, databases)),
       returnVoid
     );
   };
 
-export const createPostgresUsers = (config: Config): TE.TaskEither<Error, void> =>
+export const createUsers = (config: Config): TE.TaskEither<Error, void> =>
   pipe(
-    createPostgresClient(config),
-    (sql) => traverseTaskEither(createPostgresUser(sql))(config.services),
+    createClient(config),
+    (sql) => traverseTaskEither(createUser(sql))(config.services),
     returnVoid
   );

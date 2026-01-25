@@ -1,0 +1,28 @@
+client: 'dev'
+
+cluster:
+  host: 'localhost'
+  port: 5432
+  admin_user: 'postgres'
+  admin_password: 'postgres'
+
+services:
+  - name: los-core-api
+    environment: production # 'sandbox/production'
+
+    postgres:
+      username_prefix: 'los_core_api_production' # 'los_core_api_${ENVIRONMENT}_${CLIENT}_${TIMESTAMP}'
+      databases:
+        - 'los_core_api_production'
+
+    secrets:
+      - container: 'testing/migrant/not-prod'
+        key: 'DATABASE_URL'
+        type: 'connection_url'
+        database_name: 'los_core_api_production'
+
+    argocd:
+      - url: ''
+      - application: ''
+      - namespace: ''
+      - resource_name: ''

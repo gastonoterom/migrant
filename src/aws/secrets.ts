@@ -66,13 +66,15 @@ const updateSecret =
       TE.flatMap(putSecretValue(client, container))
     );
 
-export const updateAllSecrets = (config: Config): TE.TaskEither<Error, void> => {
+export const updateSecrets = (config: Config): TE.TaskEither<Error, void> => {
   const client = createSecretsClient();
   const payloads = buildSecretUpdatePayloads(config);
 
+  const updateAwsSecrets = traverseTaskEither(updateSecret(client))(payloads);
+
   return pipe(
     consoleLog(`☁️  Updating ${payloads.length} secret/s in AWS...`),
-    TE.flatMap(() => traverseTaskEither(updateSecret(client))(payloads)),
+    TE.flatMap(() => updateAwsSecrets),
     returnVoid
   );
 };
