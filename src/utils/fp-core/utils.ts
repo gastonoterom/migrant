@@ -12,8 +12,8 @@ export const withContext =
     return new Error(context, { cause: error });
   };
 
-export const traverseTaskEither = A.traverse(TE.ApplicativeSeq);
-export const traverseEither = A.traverse(E.Applicative);
+export const traverseTE = A.traverse(TE.ApplicativeSeq);
+export const traverseE = A.traverse(E.Applicative);
 
 export const returnVoid: <E, V>(fa: TE.TaskEither<E, V>) => TE.TaskEither<E, void> = TE.map(
   () => undefined

@@ -1,20 +1,26 @@
-host: 'localhost'
-port: 5432
+client: 'dev'
 
-admin_user: 'postgres'
-admin_password: 'postgres'
+cluster:
+  host: 'localhost'
+  port: 5432
+  admin_user: 'postgres'
 
-services:
-  - name: los-core-api
-    postgres_user: 'dev_los_core_api_production'
-    environment: production
+service_users:
+  - username_prefix: 'los_core_api_production' # 'los_core_api_${TIMESTAMP}'
+
     databases:
-      - 'los_core_api_production'
-      # - 'data_builder'
+      - name: 'los_core_api_production'
+        schemas:
+          - 'public'
+
     secrets:
       - container: 'testing/migrant/not-prod'
         key: 'DATABASE_URL'
+        type: 'connection_url'
         database_name: 'los_core_api_production'
-      # - container: 'dev/sandbox/los-core-api/config'
-      #   key: 'DATA_BUILDER_DATABASE_URL'
-      #   database_name: 'data_builder'
+
+    deployments:
+      - url: 'https://argocd.fusefinance.com'
+        application: 'dev-sandbox'
+        namespace: 'dev-sandbox'
+        resource_name: 'dev-sandbox-journeys-api'

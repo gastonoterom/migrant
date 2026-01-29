@@ -76,7 +76,7 @@ When processing arrays with TaskEither, use sequential traversal to maintain ord
 ```typescript
 import * as A from 'fp-ts/lib/Array';
 
-const traverseTaskEither = A.traverse(TE.ApplicativeSeq);
+const traverseTE = A.traverse(TE.ApplicativeSeq);
 
 // Process items sequentially
 const grantAccessToDatabases = (sql: postgres.Sql, user: PostgresUser, databases: string[]) => {
@@ -86,7 +86,7 @@ const grantAccessToDatabases = (sql: postgres.Sql, user: PostgresUser, databases
       TE.flatMap(() => grantAccessToDatabase(sql, user, database))
     );
 
-  return traverseTaskEither(grantAccess)(databases);
+  return traverseTE(grantAccess)(databases);
 };
 ```
 

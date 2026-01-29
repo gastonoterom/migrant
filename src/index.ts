@@ -3,22 +3,20 @@ import 'dotenv/config';
 import * as E from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/lib/TaskEither';
-import { updateSecrets } from './aws';
-import { getEnvironment, readConfig } from './config';
-import { consoleLog, returnVoid } from './fp-core';
-import { log } from './log';
-import { createUsers } from './postgres';
+import { buildConfig } from './config';
+import { handleCreateDbAccess } from './domain/databases';
+import { handleUpdateSecrets } from './domain/secrets';
+import { consoleLog, returnVoid } from './utils/fp-core';
+import { log } from './utils/log';
 
 const main: TE.TaskEither<Error, void> = pipe(
-  getEnvironment(),
-  TE.fromEither,
-  TE.tap(({ timestamp }) => consoleLog(`🚀 Booting up with timestamp: ${timestamp}`)),
-  TE.tap(({ configFile }) => consoleLog(`📄 Reading configuration from: ${configFile}`)),
-  TE.flatMap(({ configFile }) => readConfig(configFile)),
-  TE.tap((config) => consoleLog(`⚙️  Processing ${config.services.length} service/s...`)),
-  TE.tap(createUsers),
-  TE.tap(updateSecrets),
-  // TE.tap(restartServices), - WIP
+  buildConfig,
+  TE.tap(({ environment }) => consoleLog(`🚀 Booting up with timestamp: ${environment.timestamp}`)),
+  TE.tap(({ environment }) => consoleLog(`📄 Reading config from: ${environment.configFile}`)),
+  TE.tap(({ serviceUsers }) => consoleLog(`⚙️  Found ${serviceUsers.length} service user/s...`)),
+  TE.tap(handleCreateDbAccess),
+  TE.tap(handleUpdateSecrets),
+  TE.tap(handleUpdateSecrets),
   returnVoid
 );
 

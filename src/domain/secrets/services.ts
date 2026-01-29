@@ -8,13 +8,11 @@ import * as E from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/function';
 import * as J from 'fp-ts/lib/Json';
 import * as TE from 'fp-ts/lib/TaskEither';
-import type { Config } from '../config';
-import { consoleLog, returnVoid, traverseTaskEither, withContext } from '../fp-core';
-import { parseJsonRecord, stringifyJson } from '../fp-core/utils';
+import { consoleLog, withContext } from '../../utils/fp-core';
+import { parseJsonRecord, stringifyJson } from '../../utils/fp-core/utils';
 import type { SecretUpdatePayload } from './types';
-import { buildSecretUpdatePayloads } from './utils';
 
-const createSecretsClient = (): SecretsManagerClient => new SecretsManagerClient({});
+export const createSecretsClient = (): SecretsManagerClient => new SecretsManagerClient({});
 
 const parseGetSecretResponse = (
   response: GetSecretValueCommandOutput
@@ -56,7 +54,7 @@ const putSecretValue =
       TE.flatMap(executePutSecretValue(client, secretId))
     );
 
-const updateSecret =
+export const updateSecret =
   (client: SecretsManagerClient) =>
   ({ container, key, newValue }: SecretUpdatePayload) =>
     pipe(
@@ -65,16 +63,3 @@ const updateSecret =
       TE.map((current) => ({ ...current, [key]: newValue })),
       TE.flatMap(putSecretValue(client, container))
     );
-
-export const updateSecrets = (config: Config): TE.TaskEither<Error, void> => {
-  const client = createSecretsClient();
-  const payloads = buildSecretUpdatePayloads(config);
-
-  const updateAwsSecrets = traverseTaskEither(updateSecret(client))(payloads);
-
-  return pipe(
-    consoleLog(`☁️  Updating ${payloads.length} secret/s in AWS...`),
-    TE.flatMap(() => updateAwsSecrets),
-    returnVoid
-  );
-};
