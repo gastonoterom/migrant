@@ -1,5 +1,9 @@
 import * as E from 'fp-ts/lib/Either';
-import { clusterPasswordRequiredError, seedRequiredError } from './errors';
+import {
+  argoCdTokenRequiredError,
+  clusterPasswordRequiredError,
+  seedRequiredError,
+} from './errors';
 import type { Environment } from './types';
 
 export const getEnvironment = (): E.Either<Error, Environment> => {
@@ -13,6 +17,7 @@ export const getEnvironment = (): E.Either<Error, Environment> => {
 
   if (!seed) return E.left(seedRequiredError());
   if (!clusterPassword) return E.left(clusterPasswordRequiredError());
+  if (!argoCdToken) return E.left(argoCdTokenRequiredError());
 
   return E.right({ seed, timestamp, configFile, argoCdToken, clusterPassword });
 };

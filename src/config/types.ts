@@ -2,7 +2,7 @@ export type Environment = {
   seed: string;
   timestamp: string;
   configFile: string;
-  argoCdToken?: string;
+  argoCdToken: string;
   clusterPassword: string;
 };
 
