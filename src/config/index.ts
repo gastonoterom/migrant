@@ -1,3 +1,2 @@
-export { getEnvironment } from './environment';
-export type { Config, Environment, Secret, Service } from './types';
-export { readConfig } from './utils';
+export { buildConfig } from './config.schemas';
+export type { Cluster, Config, Deployment, Environment, Secret, ServiceUser } from './config.types';

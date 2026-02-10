@@ -1,20 +1,43 @@
-host: 'localhost'
-port: 5432
+client: 'dev'
 
-admin_user: 'postgres'
-admin_password: 'postgres'
+cluster:
+  host: 'dev-cluster.cluster-ckkge3pysmsm.us-east-2.rds.amazonaws.com'
+  port: 5432
+  admin_user: 'postgres'
 
-services:
-  - name: los-core-api
-    postgres_user: 'dev_los_core_api_production'
-    environment: production
-    databases:
-      - 'los_core_api_production'
-      # - 'data_builder'
+service_users:
+  # Sandbox
+  - username_prefix: 'los_core_api_sandbox' # 'los_core_api_sandbox_${TIMESTAMP}'
+
     secrets:
-      - container: 'testing/migrant/not-prod'
+      - container: 'dev/sandbox/los-core-api/config'
         key: 'DATABASE_URL'
-        database_name: 'los_core_api_production'
-      # - container: 'dev/sandbox/los-core-api/config'
-      #   key: 'DATA_BUILDER_DATABASE_URL'
-      #   database_name: 'data_builder'
+        database_name: 'los-sandbox'
+        type: 'connection_url'
+
+      - container: 'dev/sandbox/los-core-api/config'
+        key: 'DATA_BUILDER_DATABASE_URL'
+        database_name: 'data-builder'
+        type: 'connection_url'
+
+    deployments:
+      - url: 'https://argocd.fusefinance.com'
+        application: 'dev-sandbox'
+        namespace: 'dev-sandbox'
+        resource_name: 'dev-sandbox-los-core-api'
+
+  - username_prefix: 'los_integrations'
+
+    secrets:
+      - container: 'dev/sandbox/los-integrations/config'
+        key: 'DATABASE_URL'
+        database_name: 'los-sandbox'
+        type: 'connection_url'
+
+    deployments:
+      - url: 'https://argocd.fusefinance.com'
+        application: 'dev-sandbox'
+        namespace: 'dev-sandbox'
+        resource_name: 'dev-sandbox-los-integrations'
+
+  # Production

@@ -1,8 +1,6 @@
-![migrant logo](assets/logo.png)
-
 # Migrant
 
-A deterministic credential migration tool for managing database users and secrets across environments. Built with pure functional programming principles.
+A deterministic credential migration tool for managing database users and secrets across environments.
 
 ## Prerequisites
 
@@ -49,27 +47,6 @@ const derivePassword = ({ seed, timestamp, identifier }): string => {
 ### AWS Secrets
 
 Secrets are updated non-destructively. The tool reads the current secret JSON, merges in new values, and writes back preserving any existing keys.
-
-## Pure Functional Programming
-
-Built with [fp-ts](https://gcanti.github.io/fp-ts/) following strict functional programming principles:
-
-- **TaskEither** for all async operations that can fail
-- **No side effects** in utility functions
-
-The main pipeline demonstrates this approach:
-
-```typescript
-const main: TE.TaskEither<Error, void> = pipe(
-  getEnvironment(),
-  TE.fromEither,
-  TE.tap(({ timestamp }) => consoleLog(`Booting up with timestamp: ${timestamp}`)),
-  TE.flatMap(({ configFile }) => readConfig(configFile)),
-  TE.tap(createPostgresUsers),
-  TE.tap(updateAllSecrets),
-  returnVoid
-);
-```
 
 ## Features
 

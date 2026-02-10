@@ -30,63 +30,30 @@ class PostgresUser {
 }
 ```
 
-## Functional Programming
+## Async Operations and Error Handling
 
-This project uses [fp-ts](https://gcanti.github.io/fp-ts/) for functional programming patterns.
+Use plain async/await. Async functions that can fail throw errors; callers use try/catch.
 
-### TaskEither for Async Operations
-
-All async operations that can fail must use `TaskEither<Error, T>`:
-
-```typescript
-import * as TE from 'fp-ts/lib/TaskEither';
-import * as E from 'fp-ts/lib/Either';
-
-// Wrap async operations with error handling
-const safeTask = <T>(f: () => Promise<T>) => TE.tryCatch(f, E.toError);
-
-// Example usage
-const readConfig = (path: string): TE.TaskEither<Error, Config> =>
-  pipe(
-    TE.tryCatch(() => readFile(path, 'utf-8'), E.toError),
-    TE.map((content) => parse(content) as unknown),
-    TE.flatMapEither(parseConfig)
-  );
-```
-
-### Pipe for Composition
-
-Use `pipe` for function composition:
+- Prefer **arrow functions** for all function definitions.
+- Use `Promise<T>` (or async functions returning `T`) for async work — no TaskEither.
+- Use try/catch for error handling. Wrap thrown errors with context using `new Error(message, { cause: err })` when rethrowing.
 
 ```typescript
-import { pipe } from 'fp-ts/lib/function';
+// Async operation that throws on failure
+const readConfig = async (path: string): Promise<Config> => {
+  try {
+    const content = await readFile(path, 'utf-8');
+    return parseConfig(content);
+  } catch (err) {
+    throw new Error(`Failed to read config: ${path}`, { cause: err });
+  }
+};
 
-const main: TE.TaskEither<Error, void> = pipe(
-  readConfig(...),
-  TE.tap((config) => consoleLog(`Processing ${config.services.length} service/s...`)),
-  TE.flatMap(createPostgresUsers),
-  returnVoid
-);
-```
-
-### Sequential Traversal
-
-When processing arrays with TaskEither, use sequential traversal to maintain order and handle errors properly:
-
-```typescript
-import * as A from 'fp-ts/lib/Array';
-
-const traverseTaskEither = A.traverse(TE.ApplicativeSeq);
-
-// Process items sequentially
-const grantAccessToDatabases = (sql: postgres.Sql, user: PostgresUser, databases: string[]) => {
-  const grantAccess = (database: string) =>
-    pipe(
-      consoleLog(`-- Granting access to database: ${database}`),
-      TE.flatMap(() => grantAccessToDatabase(sql, user, database))
-    );
-
-  return traverseTaskEither(grantAccess)(databases);
+// Sequential processing: use for...of
+const processItems = async (items: Item[]) => {
+  for (const item of items) {
+    await processOne(item);
+  }
 };
 ```
 
@@ -158,20 +125,6 @@ Additional files for domain-specific logic:
 - `schemas.ts` — Zod validation schemas
 
 ## Import Conventions
-
-- Import fp-ts modules with namespace imports:
-
-  ```typescript
-  import * as TE from 'fp-ts/lib/TaskEither';
-  import * as E from 'fp-ts/lib/Either';
-  import * as A from 'fp-ts/lib/Array';
-  ```
-
-- Import `pipe` directly:
-
-  ```typescript
-  import { pipe } from 'fp-ts/lib/function';
-  ```
 
 - Import from module barrel files (index.ts):
   ```typescript
